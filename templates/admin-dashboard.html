@@ -621,7 +621,7 @@ async function loadExchangeRatesStatus() {
 async function updateExchangeRates() {
     try {
         // This would trigger a rate update on the server
-        alert('Exchange rates update initiated. This may take a few moments.');
+        alert('Exchange rates update initiated (With Connected API). This may take a few moments.');
         loadExchangeRatesStatus();
     } catch (error) {
         console.error('Error updating exchange rates:', error);
