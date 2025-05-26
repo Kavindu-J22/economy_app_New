@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Currency Converter - Enomy-Finances{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1 class="display-5 fw-bold text-center">Currency Converter</h1>
+            <p class="lead text-center text-muted">Convert between major currencies with real-time exchange rates</p>
+        </div>
+    </div>
+    
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Converter Card -->
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Currency Conversion</h4>
+                </div>
+                <div class="card-body">
+                    <form id="currencyForm">
+                        <div class="row g-3">
+                            <!-- From Currency -->
+                            <div class="col-md-6">
+                                <label for="fromCurrency" class="form-label">From Currency</label>
+                                <select class="form-select" id="fromCurrency" required>
+                                    <option value="">Select currency...</option>
+                                    <option value="GBP">GBP - British Pound</option>
+                                    <option value="USD">USD - US Dollar</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="BRL">BRL - Brazilian Real</option>
+                                    <option value="JPY">JPY - Japanese Yen</option>
+                                    <option value="TRY">TRY - Turkish Lira</option>
+                                </select>
+                            </div>
+                            
+                            <!-- To Currency -->
+                            <div class="col-md-6">
+                                <label for="toCurrency" class="form-label">To Currency</label>
+                                <select class="form-select" id="toCurrency" required>
+                                    <option value="">Select currency...</option>
+                                    <option value="GBP">GBP - British Pound</option>
+                                    <option value="USD">USD - US Dollar</option>
+                                    <option value="EUR">EUR - Euro</option>
+                                    <option value="BRL">BRL - Brazilian Real</option>
+                                    <option value="JPY">JPY - Japanese Yen</option>
+                                    <option value="TRY">TRY - Turkish Lira</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Amount -->
+                            <div class="col-12">
+                                <label for="amount" class="form-label">Amount</label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control" id="amount" 
+                                           placeholder="Enter amount" min="300" max="5000" step="0.01" required>
+                                    <span class="input-group-text" id="amountCurrency">Currency</span>
+                                </div>
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Transaction limits: 300 - 5,000 in the source currency
+                                </div>
+                            </div>
+                            
+                            <!-- Convert Button -->
+                            <div class="col-12 text-center">
+                                <button type="button" class="btn btn-primary btn-lg" onclick="convertCurrency()">
+                                    <i class="fas fa-exchange-alt me-2"></i>Convert Currency
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <!-- Error/Success Messages -->
+                    <div id="conversionError" class="alert alert-danger mt-3" style="display: none;"></div>
+                    <div id="conversionSuccess" class="alert alert-success mt-3" style="display: none;"></div>
+                </div>
+            </div>
+            
+            <!-- Results Card -->
+            <div class="card shadow-lg mt-4" id="resultsCard" style="display: none;">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-calculator me-2"></i>Conversion Results</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="result-item">
+                                <label class="form-label fw-bold">Original Amount:</label>
+                                <div class="h5 text-primary" id="resultOriginalAmount">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="result-item">
+                                <label class="form-label fw-bold">Converted Amount:</label>
+                                <div class="h5 text-success" id="resultConvertedAmount">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="result-item">
+                                <label class="form-label fw-bold">Exchange Rate:</label>
+                                <div class="h6" id="resultExchangeRate">-</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="result-item">
+                                <label class="form-label fw-bold">Fee:</label>
+                                <div class="h6 text-warning" id="resultFee">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Fee Breakdown -->
+                    <div class="mt-4">
+                        <h6 class="fw-bold">Transaction Breakdown:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <td>Original Amount:</td>
+                                        <td class="text-end" id="breakdownOriginal">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Fee (<span id="breakdownFeePercent">-</span>%):</td>
+                                        <td class="text-end text-warning" id="breakdownFeeAmount">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Amount After Fee:</td>
+                                        <td class="text-end" id="breakdownAfterFee">-</td>
+                                    </tr>
+                                    <tr class="table-success">
+                                        <td class="fw-bold">Final Converted Amount:</td>
+                                        <td class="text-end fw-bold" id="breakdownFinal">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Fee Structure Information -->
+            <div class="card shadow-lg mt-4">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Fee Structure</h4>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Transaction Amount</th>
+                                    <th>Fee Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Up to 500</td>
+                                    <td>3.5%</td>
+                                </tr>
+                                <tr>
+                                    <td>501 - 1,500</td>
+                                    <td>2.7%</td>
+                                </tr>
+                                <tr>
+                                    <td>1,501 - 2,500</td>
+                                    <td>2.0%</td>
+                                </tr>
+                                <tr>
+                                    <td>Over 2,500</td>
+                                    <td>1.5%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="fas fa-lightbulb me-2"></i>
+                        <strong>Tip:</strong> Larger transactions benefit from lower fee rates. 
+                        Consider consolidating smaller transactions for better rates.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Exchange Rates Display -->
+            <div class="card shadow-lg mt-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>Current Exchange Rates</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="rateBaseCurrency" class="form-label">Base Currency:</label>
+                            <select class="form-select" id="rateBaseCurrency" onchange="loadExchangeRates()">
+                                <option value="GBP">GBP - British Pound</option>
+                                <option value="USD">USD - US Dollar</option>
+                                <option value="EUR">EUR - Euro</option>
+                                <option value="BRL">BRL - Brazilian Real</option>
+                                <option value="JPY">JPY - Japanese Yen</option>
+                                <option value="TRY">TRY - Turkish Lira</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <div id="exchangeRatesDisplay" class="row g-2">
+                            <!-- Exchange rates will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/currency-converter.js') }}"></script>
+<script>
+    // Initialize page
+    document.addEventListener('DOMContentLoaded', function() {
+        loadExchangeRates();
+        
+        // Update currency display when from currency changes
+        document.getElementById('fromCurrency').addEventListener('change', function() {
+            document.getElementById('amountCurrency').textContent = this.value || 'Currency';
+        });
+    });
+</script>
+{% endblock %}

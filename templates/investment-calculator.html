@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Investment Calculator - Enomy-Finances{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <h1 class="display-5 fw-bold text-center">Investment Calculator</h1>
+            <p class="lead text-center text-muted">Calculate potential returns on your investment plans</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Investment Form -->
+        <div class="col-lg-6">
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-calculator me-2"></i>Investment Parameters</h4>
+                </div>
+                <div class="card-body">
+                    <form id="investmentForm">
+                        <!-- Investment Type Selection -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Select Investment Plan:</label>
+                            <div class="row g-2">
+                                <div class="col-12">
+                                    <div class="investment-option card border-primary" onclick="selectInvestmentType('basic')">
+                                        <div class="card-body p-3">
+                                            <input type="radio" name="investment_type" value="basic" id="basic" class="form-check-input me-2">
+                                            <label for="basic" class="form-check-label">
+                                                <strong>Basic Savings Plan</strong><br>
+                                                <small class="text-muted">1.2% - 2.4% returns, £20k max yearly</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="investment-option card border-success" onclick="selectInvestmentType('plus')">
+                                        <div class="card-body p-3">
+                                            <input type="radio" name="investment_type" value="plus" id="plus" class="form-check-input me-2">
+                                            <label for="plus" class="form-check-label">
+                                                <strong>Savings Plan Plus</strong><br>
+                                                <small class="text-muted">3% - 5.5% returns, £30k max yearly</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <div class="investment-option card border-warning" onclick="selectInvestmentType('managed')">
+                                        <div class="card-body p-3">
+                                            <input type="radio" name="investment_type" value="managed" id="managed" class="form-check-input me-2">
+                                            <label for="managed" class="form-check-label">
+                                                <strong>Managed Stock Investments</strong><br>
+                                                <small class="text-muted">4% - 23% returns, unlimited yearly</small>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Investment Amounts -->
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="initialLumpSum" class="form-label">Initial Lump Sum (£)</label>
+                                <input type="number" class="form-control" id="initialLumpSum"
+                                       placeholder="Enter initial investment" min="0" step="0.01">
+                                <div class="form-text" id="lumpSumHelp">Minimum varies by plan</div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="monthlyInvestment" class="form-label">Monthly Investment (£)</label>
+                                <input type="number" class="form-control" id="monthlyInvestment"
+                                       placeholder="Enter monthly amount" min="0" step="0.01">
+                                <div class="form-text" id="monthlyHelp">Minimum varies by plan</div>
+                            </div>
+                        </div>
+
+                        <!-- Calculate Button -->
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn btn-success btn-lg" id="calculateButton">
+                                <i class="fas fa-chart-line me-2"></i>Calculate Returns
+                            </button>
+                        </div>
+
+                        <!-- Error/Success Messages -->
+                        <div id="investmentError" class="alert alert-danger mt-3" style="display: none;"></div>
+                        <div id="investmentSuccess" class="alert alert-success mt-3" style="display: none;"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Plan Details -->
+            <div class="card shadow-lg mt-4" id="planDetailsCard" style="display: none;">
+                <div class="card-header bg-info text-white">
+                    <h4 class="mb-0"><i class="fas fa-info-circle me-2"></i>Plan Details</h4>
+                </div>
+                <div class="card-body" id="planDetailsContent">
+                    <!-- Plan details will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="col-lg-6">
+            <div class="card shadow-lg" id="resultsCard" style="display: none;">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Investment Projections</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Projection Summary -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-4 text-center">
+                            <div class="result-item">
+                                <label class="form-label">1 Year</label>
+                                <div class="h6 text-primary" id="result1YearRange">-</div>
+                                <small class="text-muted" id="result1YearProfit">-</small>
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="result-item">
+                                <label class="form-label">5 Years</label>
+                                <div class="h6 text-success" id="result5YearRange">-</div>
+                                <small class="text-muted" id="result5YearProfit">-</small>
+                            </div>
+                        </div>
+                        <div class="col-4 text-center">
+                            <div class="result-item">
+                                <label class="form-label">10 Years</label>
+                                <div class="h6 text-warning" id="result10YearRange">-</div>
+                                <small class="text-muted" id="result10YearProfit">-</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Breakdown -->
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Period</th>
+                                    <th>Min Value</th>
+                                    <th>Max Value</th>
+                                    <th>Fees</th>
+                                    <th>Tax</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultsTableBody">
+                                <!-- Results will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Chart -->
+                    <div class="chart-container mt-4">
+                        <canvas id="investmentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Investment Plans Comparison -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h2 class="text-center mb-4">Investment Plans Comparison</h2>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Basic Plan -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-primary">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4>Basic Savings Plan</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>Returns:</strong> 1.2% - 2.4% per year</li>
+                        <li><strong>Max yearly:</strong> £20,000</li>
+                        <li><strong>Min monthly:</strong> £50</li>
+                        <li><strong>Min lump sum:</strong> None</li>
+                        <li><strong>Tax:</strong> 0%</li>
+                        <li><strong>Monthly fee:</strong> 0.25%</li>
+                    </ul>
+                    <div class="alert alert-info">
+                        <small><i class="fas fa-lightbulb me-1"></i>Perfect for conservative investors seeking steady, tax-free growth.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plus Plan -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-success">
+                <div class="card-header bg-success text-white text-center">
+                    <h4>Savings Plan Plus</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>Returns:</strong> 3% - 5.5% per year</li>
+                        <li><strong>Max yearly:</strong> £30,000</li>
+                        <li><strong>Min monthly:</strong> £50</li>
+                        <li><strong>Min lump sum:</strong> £300</li>
+                        <li><strong>Tax:</strong> 10% on profits above £12,000</li>
+                        <li><strong>Monthly fee:</strong> 0.3%</li>
+                    </ul>
+                    <div class="alert alert-success">
+                        <small><i class="fas fa-lightbulb me-1"></i>Balanced option with moderate risk and better returns.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Managed Plan -->
+        <div class="col-lg-4">
+            <div class="card h-100 border-warning">
+                <div class="card-header bg-warning text-dark text-center">
+                    <h4>Managed Stock Investments</h4>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><strong>Returns:</strong> 4% - 23% per year</li>
+                        <li><strong>Max yearly:</strong> Unlimited</li>
+                        <li><strong>Min monthly:</strong> £150</li>
+                        <li><strong>Min lump sum:</strong> £1,000</li>
+                        <li><strong>Tax:</strong> Progressive (10%/20%)</li>
+                        <li><strong>Monthly fee:</strong> 1.3%</li>
+                    </ul>
+                    <div class="alert alert-warning">
+                        <small><i class="fas fa-lightbulb me-1"></i>High-growth potential for experienced investors willing to accept higher risk.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/investment-calculator.js') }}"></script>
+{% endblock %}

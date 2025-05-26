@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - Enomy-Finances{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Admin Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold">Admin Dashboard</h1>
+                    <p class="text-muted mb-0">System overview and management</p>
+                </div>
+                <div>
+                    <button class="btn btn-warning me-2" onclick="updateExchangeRates()">
+                        <i class="fas fa-sync me-1"></i>Update Rates
+                    </button>
+                    <button class="btn btn-info" onclick="exportData()">
+                        <i class="fas fa-download me-1"></i>Export Data
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Statistics -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Users</h6>
+                            <h2 class="dashboard-stat" id="totalUsers">0</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Transactions</h6>
+                            <h2 class="dashboard-stat" id="totalTransactions">0</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exchange-alt fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Revenue (Fees)</h6>
+                            <h2 class="dashboard-stat" id="totalRevenue">£0</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-pound-sign fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">System Errors</h6>
+                            <h2 class="dashboard-stat" id="totalErrors">0</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Activity -->
+        <div class="col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <ul class="nav nav-tabs card-header-tabs" id="adminTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="transactions-tab" data-bs-toggle="tab"
+                                    data-bs-target="#transactions" type="button" role="tab">
+                                <i class="fas fa-exchange-alt me-1"></i>Recent Transactions
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="users-tab" data-bs-toggle="tab"
+                                    data-bs-target="#users" type="button" role="tab">
+                                <i class="fas fa-users me-1"></i>User Management
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="errors-tab" data-bs-toggle="tab"
+                                    data-bs-target="#errors" type="button" role="tab">
+                                <i class="fas fa-bug me-1"></i>Error Logs
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="adminTabContent">
+                        <!-- Transactions Tab -->
+                        <div class="tab-pane fade show active" id="transactions" role="tabpanel">
+                            <div id="transactionsLoading" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Loading transactions...</p>
+                            </div>
+                            <div id="transactionsList"></div>
+                        </div>
+
+                        <!-- Users Tab -->
+                        <div class="tab-pane fade" id="users" role="tabpanel">
+                            <div id="usersLoading" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Loading users...</p>
+                            </div>
+                            <div id="usersList"></div>
+                        </div>
+
+                        <!-- Errors Tab -->
+                        <div class="tab-pane fade" id="errors" role="tabpanel">
+                            <div id="errorsLoading" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Loading error logs...</p>
+                            </div>
+                            <div id="errorsList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Information -->
+        <div class="col-lg-4">
+            <!-- Exchange Rates Status -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>Exchange Rates</h4>
+                </div>
+                <div class="card-body">
+                    <div id="exchangeRatesStatus">
+                        <div class="text-center py-3">
+                            <div class="spinner-border text-secondary" role="status"></div>
+                            <p class="mt-2 text-muted">Loading rates...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0"><i class="fas fa-heartbeat me-2"></i>System Health</h4>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Database Connection</span>
+                        <span class="badge bg-success">Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Currency API</span>
+                        <span class="badge bg-success" id="apiStatus">Online</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>Last Rate Update</span>
+                        <span class="text-muted" id="lastUpdate">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Server Uptime</span>
+                        <span class="text-muted" id="uptime">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Access Check -->
+<div class="modal fade" id="accessDeniedModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Access Denied</h5>
+            </div>
+            <div class="modal-body">
+                <div class="text-center">
+                    <i class="fas fa-lock fa-3x text-danger mb-3"></i>
+                    <h5>Administrator Access Required</h5>
+                    <p>You need administrator privileges to access this page.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="window.location.href='/'">
+                    Return to Home
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Admin Dashboard JavaScript
+let adminData = {
+    transactions: [],
+    users: [],
+    errors: [],
+    stats: {}
+};
+
+// Initialize admin dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    // Check authentication and admin privileges
+    checkAuthAndLoadAdmin();
+});
+
+async function checkAuthAndLoadAdmin() {
+    try {
+        // Try to load user profile to check if authenticated
+        const data = await apiRequest('/api/user/profile');
+
+        // If successful, user is authenticated
+        isAuthenticated = true;
+        currentUser = data.user;
+        updateNavigation();
+
+        // Check admin privileges
+        if (!currentUser || currentUser.user_type !== 'admin') {
+            showModal('accessDeniedModal');
+            return;
+        }
+
+        // Load admin dashboard data
+        loadAdminStats();
+        loadRecentTransactions();
+        loadExchangeRatesStatus();
+
+        // Set up tab event listeners
+        document.getElementById('users-tab').addEventListener('click', loadUsers);
+        document.getElementById('errors-tab').addEventListener('click', loadErrorLogs);
+
+    } catch (error) {
+        // If failed, user is not authenticated - redirect to home
+        console.log('User not authenticated, redirecting to home');
+        window.location.href = '/';
+    }
+}
+
+// Check admin access
+function checkAdminAccess() {
+    if (!currentUser || currentUser.user_type !== 'admin') {
+        showModal('accessDeniedModal');
+        return;
+    }
+}
+
+// Load admin statistics
+async function loadAdminStats() {
+    try {
+        const data = await apiRequest('/api/admin/stats');
+
+        document.getElementById('totalUsers').textContent = data.totalUsers;
+        document.getElementById('totalTransactions').textContent = data.totalTransactions;
+        document.getElementById('totalRevenue').textContent = formatCurrency(data.totalRevenue);
+        document.getElementById('totalErrors').textContent = data.totalErrors;
+
+        adminData.stats = data;
+    } catch (error) {
+        console.error('Error loading admin stats:', error);
+        // Fallback to default values
+        document.getElementById('totalUsers').textContent = '0';
+        document.getElementById('totalTransactions').textContent = '0';
+        document.getElementById('totalRevenue').textContent = '£0';
+        document.getElementById('totalErrors').textContent = '0';
+    }
+}
+
+// Load recent transactions
+async function loadRecentTransactions() {
+    try {
+        const data = await apiRequest('/api/admin/transactions');
+
+        displayTransactions(data.transactions);
+        adminData.transactions = data.transactions;
+    } catch (error) {
+        console.error('Error loading transactions:', error);
+        document.getElementById('transactionsList').innerHTML =
+            '<div class="alert alert-danger">Failed to load transactions</div>';
+    } finally {
+        document.getElementById('transactionsLoading').style.display = 'none';
+    }
+}
+
+// Display transactions
+function displayTransactions(transactions) {
+    const container = document.getElementById('transactionsList');
+    container.innerHTML = '';
+
+    if (transactions.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No transactions found</div>';
+        return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'table table-striped table-hover';
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Conversion</th>
+                <th>Amount</th>
+                <th>Fee</th>
+                <th>Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${transactions.map(t => `
+                <tr>
+                    <td>${t.username}</td>
+                    <td>${t.from_currency} → ${t.to_currency}</td>
+                    <td>${formatCurrency(t.amount_from, t.from_currency)}</td>
+                    <td>${formatCurrency(t.fee_amount, t.from_currency)}</td>
+                    <td>${new Date(t.transaction_date).toLocaleString()}</td>
+                    <td><span class="badge bg-success">Completed</span></td>
+                </tr>
+            `).join('')}
+        </tbody>
+    `;
+
+    container.appendChild(table);
+}
+
+// Load users
+async function loadUsers() {
+    if (adminData.users.length > 0) return; // Already loaded
+
+    try {
+        document.getElementById('usersLoading').style.display = 'block';
+
+        // Simulate user data
+        const users = [
+            {
+                id: 1,
+                username: 'john_doe',
+                email: 'john@example.com',
+                first_name: 'John',
+                last_name: 'Doe',
+                user_type: 'client',
+                created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+                is_active: true
+            },
+            {
+                id: 2,
+                username: 'jane_smith',
+                email: 'jane@example.com',
+                first_name: 'Jane',
+                last_name: 'Smith',
+                user_type: 'client',
+                created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
+                is_active: true
+            }
+        ];
+
+        displayUsers(users);
+        adminData.users = users;
+    } catch (error) {
+        console.error('Error loading users:', error);
+        document.getElementById('usersList').innerHTML =
+            '<div class="alert alert-danger">Failed to load users</div>';
+    } finally {
+        document.getElementById('usersLoading').style.display = 'none';
+    }
+}
+
+// Display users
+function displayUsers(users) {
+    const container = document.getElementById('usersList');
+    container.innerHTML = '';
+
+    const table = document.createElement('table');
+    table.className = 'table table-striped table-hover';
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Type</th>
+                <th>Joined</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${users.map(u => `
+                <tr>
+                    <td>${u.username}</td>
+                    <td>${u.first_name} ${u.last_name}</td>
+                    <td>${u.email}</td>
+                    <td><span class="badge bg-primary">${u.user_type}</span></td>
+                    <td>${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td><span class="badge bg-${u.is_active ? 'success' : 'danger'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="viewUser(${u.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('')}
+        </tbody>
+    `;
+
+    container.appendChild(table);
+}
+
+// Load error logs
+async function loadErrorLogs() {
+    if (adminData.errors.length > 0) return; // Already loaded
+
+    try {
+        document.getElementById('errorsLoading').style.display = 'block';
+
+        // Simulate error data
+        const errors = [
+            {
+                id: 1,
+                error_type: 'currency_api_error',
+                error_message: 'Failed to fetch exchange rates from external API',
+                user_id: null,
+                timestamp: new Date(Date.now() - 3600000).toISOString()
+            },
+            {
+                id: 2,
+                error_type: 'validation_error',
+                error_message: 'Invalid transaction amount: -100',
+                user_id: 5,
+                timestamp: new Date(Date.now() - 7200000).toISOString()
+            }
+        ];
+
+        displayErrors(errors);
+        adminData.errors = errors;
+    } catch (error) {
+        console.error('Error loading error logs:', error);
+        document.getElementById('errorsList').innerHTML =
+            '<div class="alert alert-danger">Failed to load error logs</div>';
+    } finally {
+        document.getElementById('errorsLoading').style.display = 'none';
+    }
+}
+
+// Display errors
+function displayErrors(errors) {
+    const container = document.getElementById('errorsList');
+    container.innerHTML = '';
+
+    if (errors.length === 0) {
+        container.innerHTML = '<div class="alert alert-success">No recent errors</div>';
+        return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'table table-striped table-hover';
+    table.innerHTML = `
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Message</th>
+                <th>User</th>
+                <th>Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${errors.map(e => `
+                <tr>
+                    <td><span class="badge bg-danger">${e.error_type}</span></td>
+                    <td>${e.error_message}</td>
+                    <td>${e.user_id || 'System'}</td>
+                    <td>${new Date(e.timestamp).toLocaleString()}</td>
+                </tr>
+            `).join('')}
+        </tbody>
+    `;
+
+    container.appendChild(table);
+}
+
+// Load exchange rates status
+async function loadExchangeRatesStatus() {
+    try {
+        const data = await apiRequest('/api/exchange-rates/GBP');
+
+        const container = document.getElementById('exchangeRatesStatus');
+        container.innerHTML = `
+            <h6 class="mb-3">Current Rates (Base: GBP)</h6>
+            <div class="row g-2">
+                ${Object.entries(data.rates).map(([currency, rate]) => `
+                    <div class="col-6">
+                        <div class="d-flex justify-content-between">
+                            <span>${currency}:</span>
+                            <span class="fw-bold">${formatNumber(rate, 4)}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <hr>
+            <small class="text-muted">Last updated: ${new Date().toLocaleString()}</small>
+        `;
+
+        document.getElementById('lastUpdate').textContent = new Date().toLocaleString();
+        document.getElementById('apiStatus').textContent = 'Online';
+        document.getElementById('apiStatus').className = 'badge bg-success';
+    } catch (error) {
+        console.error('Error loading exchange rates:', error);
+        document.getElementById('exchangeRatesStatus').innerHTML =
+            '<div class="alert alert-warning">Failed to load exchange rates</div>';
+        document.getElementById('apiStatus').textContent = 'Offline';
+        document.getElementById('apiStatus').className = 'badge bg-danger';
+    }
+}
+
+// Update exchange rates
+async function updateExchangeRates() {
+    try {
+        // This would trigger a rate update on the server
+        alert('Exchange rates update initiated. This may take a few moments.');
+        loadExchangeRatesStatus();
+    } catch (error) {
+        console.error('Error updating exchange rates:', error);
+        alert('Failed to update exchange rates');
+    }
+}
+
+// Export data
+async function exportData() {
+    try {
+        // Show loading state
+        const exportBtn = document.querySelector('button[onclick="exportData()"]');
+        const originalText = exportBtn.innerHTML;
+        exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
+        exportBtn.disabled = true;
+
+        const response = await apiRequest('/api/admin/export-data');
+
+        // Convert base64 to blob and download
+        const byteCharacters = atob(response.pdf_data);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/pdf' });
+
+        // Create download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = response.filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        // Show success message
+        alert('Report downloaded successfully!');
+
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Failed to generate report. Please try again.');
+    } finally {
+        // Restore button state
+        const exportBtn = document.querySelector('button[onclick="exportData()"]');
+        exportBtn.innerHTML = '<i class="fas fa-download me-1"></i>Export Data';
+        exportBtn.disabled = false;
+    }
+}
+
+// View user details
+function viewUser(userId) {
+    alert(`View user details for user ID: ${userId}`);
+}
+
+// Update uptime display
+function updateUptime() {
+    const startTime = new Date(Date.now() - 86400000 * 5); // 5 days ago
+    const uptime = Date.now() - startTime.getTime();
+    const days = Math.floor(uptime / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((uptime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+    document.getElementById('uptime').textContent = `${days}d ${hours}h`;
+}
+
+// Initialize uptime
+updateUptime();
+setInterval(updateUptime, 60000); // Update every minute
+</script>
+{% endblock %}

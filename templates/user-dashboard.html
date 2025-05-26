@@ -1,0 +1,510 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Enomy-Finances{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Dashboard Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="display-6 fw-bold">Dashboard</h1>
+                    <p class="text-muted mb-0">Welcome back, <span id="userFirstName">User</span>!</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary me-2" onclick="window.location.href='/currency-converter'">
+                        <i class="fas fa-exchange-alt me-1"></i>New Conversion
+                    </button>
+                    <button class="btn btn-success" onclick="window.location.href='/investment-calculator'">
+                        <i class="fas fa-calculator me-1"></i>New Investment
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="card dashboard-card text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Transactions</h6>
+                            <h2 class="dashboard-stat" id="totalTransactions">0</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exchange-alt fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Investment Quotes</h6>
+                            <h2 class="dashboard-stat" id="totalQuotes">0</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-pie fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Converted</h6>
+                            <h2 class="dashboard-stat" id="totalConverted">£0</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-coins fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Fees Paid</h6>
+                            <h2 class="dashboard-stat" id="totalFees">£0</h2>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-receipt fa-2x opacity-75"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Recent Transactions -->
+        <div class="col-lg-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-history me-2"></i>Recent Transactions</h4>
+                    <button class="btn btn-light btn-sm" onclick="loadTransactions()">
+                        <i class="fas fa-refresh me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="transactionsLoading" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading transactions...</p>
+                    </div>
+
+                    <div id="transactionsList">
+                        <!-- Transactions will be loaded here -->
+                    </div>
+
+                    <div id="noTransactions" class="text-center py-4" style="display: none;">
+                        <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No transactions yet</h5>
+                        <p class="text-muted">Start by making your first currency conversion!</p>
+                        <a href="/currency-converter" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>New Conversion
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Profile & Quick Actions -->
+        <div class="col-lg-4">
+            <!-- User Profile -->
+            <div class="card shadow-lg mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0"><i class="fas fa-user me-2"></i>Profile</h4>
+                </div>
+                <div class="card-body">
+                    <div id="userProfile">
+                        <!-- Profile will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Investment Quotes -->
+            <div class="card shadow-lg">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0"><i class="fas fa-chart-line me-2"></i>Investment Quotes</h4>
+                    <button class="btn btn-light btn-sm" onclick="loadQuotes()">
+                        <i class="fas fa-refresh me-1"></i>Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="quotesLoading" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Loading quotes...</p>
+                    </div>
+
+                    <div id="quotesList">
+                        <!-- Quotes will be loaded here -->
+                    </div>
+
+                    <div id="noQuotes" class="text-center py-4" style="display: none;">
+                        <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                        <h6 class="text-muted">No investment quotes yet</h6>
+                        <p class="text-muted small">Calculate your first investment projection!</p>
+                        <a href="/investment-calculator" class="btn btn-success btn-sm">
+                            <i class="fas fa-plus me-1"></i>New Quote
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Transaction Details Modal -->
+<div class="modal fade" id="transactionModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Transaction Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="transactionDetails">
+                <!-- Transaction details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Investment Quote Details Modal -->
+<div class="modal fade" id="quoteModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Investment Quote Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="quoteDetails">
+                <!-- Quote details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dashboard JavaScript
+let userTransactions = [];
+let userQuotes = [];
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    // Check authentication by trying to load user profile
+    checkAuthAndLoadDashboard();
+});
+
+async function checkAuthAndLoadDashboard() {
+    try {
+        // Try to load user profile to check if authenticated
+        const data = await apiRequest('/api/user/profile');
+
+        // If successful, user is authenticated
+        isAuthenticated = true;
+        currentUser = data.user;
+        updateNavigation();
+
+        // Load dashboard data
+        loadUserProfile();
+        loadTransactions();
+        loadQuotes();
+
+    } catch (error) {
+        // If failed, user is not authenticated - redirect to home
+        console.log('User not authenticated, redirecting to home');
+        window.location.href = '/';
+    }
+}
+
+// Load user profile
+async function loadUserProfile() {
+    try {
+        // Use currentUser if already loaded, otherwise fetch from API
+        let user;
+        if (currentUser) {
+            user = currentUser;
+        } else {
+            const data = await apiRequest('/api/user/profile');
+            user = data.user;
+        }
+
+        document.getElementById('userFirstName').textContent = user.first_name || user.username;
+
+        document.getElementById('userProfile').innerHTML = `
+            <div class="text-center mb-3">
+                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center"
+                     style="width: 60px; height: 60px; font-size: 24px;">
+                    ${(user.first_name || user.username).charAt(0).toUpperCase()}
+                </div>
+            </div>
+            <h6 class="text-center">${user.first_name} ${user.last_name}</h6>
+            <p class="text-center text-muted small mb-3">@${user.username}</p>
+            <hr>
+            <div class="small">
+                <p><strong>Email:</strong> ${user.email}</p>
+                <p><strong>Phone:</strong> ${user.phone || 'Not provided'}</p>
+                <p><strong>Member since:</strong> ${new Date(user.created_at).toLocaleDateString()}</p>
+            </div>
+        `;
+    } catch (error) {
+        console.error('Error loading user profile:', error);
+    }
+}
+
+// Load transactions
+async function loadTransactions() {
+    try {
+        document.getElementById('transactionsLoading').style.display = 'block';
+        document.getElementById('transactionsList').style.display = 'none';
+        document.getElementById('noTransactions').style.display = 'none';
+
+        const data = await apiRequest('/api/user/transactions');
+        userTransactions = data.transactions;
+
+        document.getElementById('transactionsLoading').style.display = 'none';
+
+        if (userTransactions.length === 0) {
+            document.getElementById('noTransactions').style.display = 'block';
+        } else {
+            displayTransactions();
+            updateStatistics();
+        }
+    } catch (error) {
+        console.error('Error loading transactions:', error);
+        document.getElementById('transactionsLoading').style.display = 'none';
+        document.getElementById('transactionsList').innerHTML =
+            '<div class="alert alert-danger">Failed to load transactions</div>';
+    }
+}
+
+// Display transactions
+function displayTransactions() {
+    const container = document.getElementById('transactionsList');
+    container.innerHTML = '';
+    container.style.display = 'block';
+
+    userTransactions.slice(0, 10).forEach(transaction => {
+        const transactionElement = document.createElement('div');
+        transactionElement.className = 'transaction-item card mb-2';
+        transactionElement.innerHTML = `
+            <div class="card-body py-2 px-3">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="fas fa-exchange-alt text-primary"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">${transaction.from_currency} → ${transaction.to_currency}</h6>
+                                <small class="text-muted">${new Date(transaction.transaction_date).toLocaleString()}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <div class="fw-bold">${formatCurrency(transaction.amount_from, transaction.from_currency)}</div>
+                        <small class="text-success">${formatCurrency(transaction.amount_to, transaction.to_currency)}</small>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <span class="badge bg-success">Completed</span>
+                        <br>
+                        <small class="text-muted">Fee: ${formatCurrency(transaction.fee_amount, transaction.from_currency)}</small>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        transactionElement.addEventListener('click', () => showTransactionDetails(transaction));
+        container.appendChild(transactionElement);
+    });
+
+    if (userTransactions.length > 10) {
+        const moreButton = document.createElement('div');
+        moreButton.className = 'text-center mt-3';
+        moreButton.innerHTML = `
+            <button class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-plus me-1"></i>View All Transactions (${userTransactions.length})
+            </button>
+        `;
+        container.appendChild(moreButton);
+    }
+}
+
+// Load quotes
+async function loadQuotes() {
+    try {
+        document.getElementById('quotesLoading').style.display = 'block';
+        document.getElementById('quotesList').style.display = 'none';
+        document.getElementById('noQuotes').style.display = 'none';
+
+        const data = await apiRequest('/api/user/quotes');
+        userQuotes = data.quotes;
+
+        document.getElementById('quotesLoading').style.display = 'none';
+
+        if (userQuotes.length === 0) {
+            document.getElementById('noQuotes').style.display = 'block';
+        } else {
+            displayQuotes();
+        }
+    } catch (error) {
+        console.error('Error loading quotes:', error);
+        document.getElementById('quotesLoading').style.display = 'none';
+        document.getElementById('quotesList').innerHTML =
+            '<div class="alert alert-danger">Failed to load quotes</div>';
+    }
+}
+
+// Display quotes
+function displayQuotes() {
+    const container = document.getElementById('quotesList');
+    container.innerHTML = '';
+    container.style.display = 'block';
+
+    userQuotes.slice(0, 5).forEach(quote => {
+        const quoteElement = document.createElement('div');
+        quoteElement.className = 'card mb-2 border-success';
+        quoteElement.innerHTML = `
+            <div class="card-body py-2 px-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 text-capitalize">${quote.investment_type} Plan</h6>
+                        <small class="text-muted">${new Date(quote.created_at).toLocaleDateString()}</small>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold text-success">${formatCurrency(quote.year_10_max)}</div>
+                        <small class="text-muted">10-year max</small>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        quoteElement.addEventListener('click', () => showQuoteDetails(quote));
+        container.appendChild(quoteElement);
+    });
+}
+
+// Update statistics
+function updateStatistics() {
+    document.getElementById('totalTransactions').textContent = userTransactions.length;
+    document.getElementById('totalQuotes').textContent = userQuotes.length;
+
+    const totalConverted = userTransactions.reduce((sum, t) => sum + t.amount_from, 0);
+    const totalFees = userTransactions.reduce((sum, t) => sum + t.fee_amount, 0);
+
+    document.getElementById('totalConverted').textContent = formatCurrency(totalConverted);
+    document.getElementById('totalFees').textContent = formatCurrency(totalFees);
+}
+
+// Show transaction details
+function showTransactionDetails(transaction) {
+    document.getElementById('transactionDetails').innerHTML = `
+        <div class="row g-3">
+            <div class="col-md-6">
+                <h6>Transaction Information</h6>
+                <table class="table table-sm">
+                    <tr><td>From Currency:</td><td>${transaction.from_currency}</td></tr>
+                    <tr><td>To Currency:</td><td>${transaction.to_currency}</td></tr>
+                    <tr><td>Exchange Rate:</td><td>${formatNumber(transaction.exchange_rate, 6)}</td></tr>
+                    <tr><td>Date:</td><td>${new Date(transaction.transaction_date).toLocaleString()}</td></tr>
+                    <tr><td>Status:</td><td><span class="badge bg-success">Completed</span></td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Amount Breakdown</h6>
+                <table class="table table-sm">
+                    <tr><td>Original Amount:</td><td>${formatCurrency(transaction.amount_from, transaction.from_currency)}</td></tr>
+                    <tr><td>Fee (${transaction.fee_percentage}%):</td><td class="text-warning">${formatCurrency(transaction.fee_amount, transaction.from_currency)}</td></tr>
+                    <tr><td>Amount After Fee:</td><td>${formatCurrency(transaction.amount_from - transaction.fee_amount, transaction.from_currency)}</td></tr>
+                    <tr class="table-success"><td><strong>Final Amount:</strong></td><td><strong>${formatCurrency(transaction.amount_to, transaction.to_currency)}</strong></td></tr>
+                </table>
+            </div>
+        </div>
+    `;
+
+    showModal('transactionModal');
+}
+
+// Show quote details
+function showQuoteDetails(quote) {
+    document.getElementById('quoteDetails').innerHTML = `
+        <div class="row g-3">
+            <div class="col-12">
+                <h5 class="text-capitalize">${quote.investment_type} Investment Plan</h5>
+                <p class="text-muted">Quote generated on ${new Date(quote.created_at).toLocaleDateString()}</p>
+            </div>
+            <div class="col-md-6">
+                <h6>Investment Parameters</h6>
+                <table class="table table-sm">
+                    <tr><td>Initial Lump Sum:</td><td>${formatCurrency(quote.initial_lump_sum)}</td></tr>
+                    <tr><td>Monthly Investment:</td><td>${formatCurrency(quote.monthly_investment)}</td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Projections Summary</h6>
+                <table class="table table-sm">
+                    <tr><td>1 Year Range:</td><td>${formatCurrency(quote.year_1_min)} - ${formatCurrency(quote.year_1_max)}</td></tr>
+                    <tr><td>5 Year Range:</td><td>${formatCurrency(quote.year_5_min)} - ${formatCurrency(quote.year_5_max)}</td></tr>
+                    <tr><td>10 Year Range:</td><td>${formatCurrency(quote.year_10_min)} - ${formatCurrency(quote.year_10_max)}</td></tr>
+                </table>
+            </div>
+            <div class="col-12">
+                <h6>Fees and Taxes</h6>
+                <div class="row">
+                    <div class="col-md-4">
+                        <table class="table table-sm">
+                            <tr><th colspan="2" class="text-center">1 Year</th></tr>
+                            <tr><td>Fees:</td><td>${formatCurrency(quote.total_fees_1y)}</td></tr>
+                            <tr><td>Tax:</td><td>${formatCurrency(quote.total_tax_1y)}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-4">
+                        <table class="table table-sm">
+                            <tr><th colspan="2" class="text-center">5 Years</th></tr>
+                            <tr><td>Fees:</td><td>${formatCurrency(quote.total_fees_5y)}</td></tr>
+                            <tr><td>Tax:</td><td>${formatCurrency(quote.total_tax_5y)}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-4">
+                        <table class="table table-sm">
+                            <tr><th colspan="2" class="text-center">10 Years</th></tr>
+                            <tr><td>Fees:</td><td>${formatCurrency(quote.total_fees_10y)}</td></tr>
+                            <tr><td>Tax:</td><td>${formatCurrency(quote.total_tax_10y)}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    showModal('quoteModal');
+}
+</script>
+{% endblock %}
