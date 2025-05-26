@@ -7,6 +7,13 @@ from config import Config
 class Database:
     def __init__(self):
         self.connection = None
+        self.config = {
+            'host': Config.DB_HOST,
+            'user': Config.DB_USER,
+            'password': Config.DB_PASSWORD,
+            'database': Config.DB_NAME,
+            'autocommit': True
+        }
         self.connect()
 
     def connect(self):
@@ -29,32 +36,25 @@ class Database:
 
         while retry_count < max_retries:
             try:
-                if not self.connection or not self.connection.is_connected():
-                    self.connect()
+                # Always create a fresh connection for each query to avoid sync issues
+                connection = mysql.connector.connect(**self.config)
+                cursor = connection.cursor(dictionary=True, buffered=True)
 
-                cursor = self.connection.cursor(dictionary=True)
                 cursor.execute(query, params)
 
                 if query.strip().upper().startswith('SELECT'):
                     result = cursor.fetchall()
                 else:
                     result = cursor.rowcount
-                    self.connection.commit()
+                    connection.commit()
 
                 cursor.close()
+                connection.close()
                 return result
 
             except Error as e:
                 retry_count += 1
                 print(f"Database error (attempt {retry_count}/{max_retries}): {e}")
-
-                # Close problematic connection
-                if self.connection:
-                    try:
-                        self.connection.close()
-                    except:
-                        pass
-                    self.connection = None
 
                 if retry_count >= max_retries:
                     print(f"Database error after {max_retries} attempts: {e}")

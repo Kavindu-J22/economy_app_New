@@ -2,7 +2,8 @@ from flask import Flask, render_template, request, jsonify, make_response, redir
 from flask_cors import CORS
 import json
 import traceback
-from datetime import datetime
+from datetime import datetime, date
+from decimal import Decimal
 
 # Import our modules
 from database import Database
@@ -11,8 +12,18 @@ from currency_api import CurrencyAPI
 from calculations import CurrencyCalculator, InvestmentCalculator
 from config import Config
 
+# Custom JSON encoder to handle Decimal and datetime objects
+class CustomJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        elif isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        return super().default(obj)
+
 app = Flask(__name__)
 app.secret_key = Config.SECRET_KEY
+app.json_encoder = CustomJSONEncoder
 CORS(app)
 
 # Initialize components
@@ -293,8 +304,15 @@ def api_calculate_investment():
 def api_user_transactions():
     try:
         transactions = db.get_user_transactions(request.user['id'])
-        return jsonify({'transactions': transactions}), 200
+        # Convert Decimal objects to float for JSON serialization
+        if transactions:
+            for transaction in transactions:
+                for key, value in transaction.items():
+                    if isinstance(value, Decimal):
+                        transaction[key] = float(value)
+        return jsonify({'transactions': transactions or []}), 200
     except Exception as e:
+        print(f"User transactions error: {e}")
         return jsonify({'error': 'Failed to fetch transactions'}), 500
 
 @app.route('/api/user/quotes')
@@ -302,8 +320,15 @@ def api_user_transactions():
 def api_user_quotes():
     try:
         quotes = db.get_user_quotes(request.user['id'])
-        return jsonify({'quotes': quotes}), 200
+        # Convert Decimal objects to float for JSON serialization
+        if quotes:
+            for quote in quotes:
+                for key, value in quote.items():
+                    if isinstance(value, Decimal):
+                        quote[key] = float(value)
+        return jsonify({'quotes': quotes or []}), 200
     except Exception as e:
+        print(f"User quotes error: {e}")
         return jsonify({'error': 'Failed to fetch quotes'}), 500
 
 @app.route('/api/investment-types')
@@ -551,11 +576,68 @@ def api_admin_transactions():
             LIMIT 50
         """) or []
 
+        # Convert Decimal objects to float for JSON serialization
+        if transactions:
+            for transaction in transactions:
+                for key, value in transaction.items():
+                    if isinstance(value, Decimal):
+                        transaction[key] = float(value)
+
         return jsonify({'transactions': transactions}), 200
 
     except Exception as e:
         print(f"Admin transactions error: {e}")
         return jsonify({'error': 'Failed to fetch transactions'}), 500
+
+@app.route('/api/admin/users')
+@auth_manager.require_auth
+def api_admin_users():
+    try:
+        # Check admin privileges
+        if request.user['user_type'] != 'admin':
+            return jsonify({'error': 'Admin privileges required'}), 403
+
+        users = db.execute_query("""
+            SELECT id, username, email, first_name, last_name, user_type, is_active, created_at
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT 100
+        """) or []
+
+        return jsonify({'users': users}), 200
+
+    except Exception as e:
+        print(f"Admin users error: {e}")
+        return jsonify({'error': 'Failed to fetch users'}), 500
+
+@app.route('/api/admin/investments')
+@auth_manager.require_auth
+def api_admin_investments():
+    try:
+        # Check admin privileges
+        if request.user['user_type'] != 'admin':
+            return jsonify({'error': 'Admin privileges required'}), 403
+
+        investments = db.execute_query("""
+            SELECT iq.*, u.username
+            FROM investment_quotes iq
+            JOIN users u ON iq.user_id = u.id
+            ORDER BY iq.created_at DESC
+            LIMIT 50
+        """) or []
+
+        # Convert Decimal objects to float for JSON serialization
+        if investments:
+            for investment in investments:
+                for key, value in investment.items():
+                    if isinstance(value, Decimal):
+                        investment[key] = float(value)
+
+        return jsonify({'investments': investments}), 200
+
+    except Exception as e:
+        print(f"Admin investments error: {e}")
+        return jsonify({'error': 'Failed to fetch investments'}), 500
 
 @app.route('/api/user/profile')
 @auth_manager.require_auth
@@ -571,5 +653,53 @@ def api_user_profile():
     except Exception as e:
         return jsonify({'error': 'Failed to fetch user profile'}), 500
 
+
+
+def create_admin_user():
+    """Create admin user if it doesn't exist"""
+    try:
+        # Check if admin user already exists
+        admin_user = db.get_user_by_username('adminEco')
+        if admin_user:
+            print("Admin user already exists")
+            print(f"User type: {admin_user.get('user_type', 'Unknown')}")
+            print(f"Is active: {admin_user.get('is_active', 'Unknown')}")
+
+            # Update admin user password to ensure it's correct
+            password_hash = auth_manager.hash_password('Admin@123')
+            update_result = db.execute_query("""
+                UPDATE users SET password_hash = %s, user_type = 'admin', is_active = TRUE
+                WHERE username = %s
+            """, (password_hash, 'adminEco'))
+
+            if update_result:
+                print("✅ Admin user password updated!")
+
+            # Show all admin users for debugging
+            all_admins = db.execute_query("SELECT username, user_type, is_active FROM users WHERE user_type = 'admin'")
+            print("All admin users:")
+            for admin in (all_admins or []):
+                print(f"  - {admin['username']} (active: {admin['is_active']})")
+            return
+
+        # Create admin user
+        password_hash = auth_manager.hash_password('Admin@123')
+        result = db.execute_query("""
+            INSERT INTO users (username, email, password_hash, first_name, last_name, user_type, is_active)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, ('adminEco', 'admin@enomy-finances.com', password_hash, 'Admin', 'User', 'admin', True))
+
+        if result:
+            print("✅ Admin user created successfully!")
+            print("Username: adminEco")
+            print("Password: Admin@123")
+        else:
+            print("❌ Failed to create admin user")
+
+    except Exception as e:
+        print(f"Error creating admin user: {e}")
+
 if __name__ == '__main__':
+    # Create admin user on startup
+    create_admin_user()
     app.run(debug=True, host='0.0.0.0', port=5000)

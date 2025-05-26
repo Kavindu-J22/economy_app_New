@@ -2,6 +2,28 @@
 
 {% block title %}Admin Dashboard - Enomy-Finances{% endblock %}
 
+{% block head %}
+<style>
+.card-header-tabs {
+    border-bottom: none !important;
+}
+.card-header-tabs .nav-link {
+    color: rgba(255, 255, 255, 0.8) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+.card-header-tabs .nav-link.active {
+    color: #0d6efd !important;
+    background: white !important;
+    border-color: white !important;
+}
+.card-header-tabs .nav-link:hover {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid">
     <!-- Admin Header -->
@@ -110,6 +132,12 @@
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="investments-tab" data-bs-toggle="tab"
+                                    data-bs-target="#investments" type="button" role="tab">
+                                <i class="fas fa-chart-line me-1"></i>Recent Investments
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <button class="nav-link" id="errors-tab" data-bs-toggle="tab"
                                     data-bs-target="#errors" type="button" role="tab">
                                 <i class="fas fa-bug me-1"></i>Error Logs
@@ -135,6 +163,15 @@
                                 <p class="mt-2 text-muted">Loading users...</p>
                             </div>
                             <div id="usersList"></div>
+                        </div>
+
+                        <!-- Investments Tab -->
+                        <div class="tab-pane fade" id="investments" role="tabpanel">
+                            <div id="investmentsLoading" class="text-center py-4">
+                                <div class="spinner-border text-primary" role="status"></div>
+                                <p class="mt-2 text-muted">Loading investment quotes...</p>
+                            </div>
+                            <div id="investmentsList"></div>
                         </div>
 
                         <!-- Errors Tab -->
@@ -258,6 +295,7 @@ async function checkAuthAndLoadAdmin() {
 
         // Set up tab event listeners
         document.getElementById('users-tab').addEventListener('click', loadUsers);
+        document.getElementById('investments-tab').addEventListener('click', loadInvestments);
         document.getElementById('errors-tab').addEventListener('click', loadErrorLogs);
 
     } catch (error) {
@@ -359,32 +397,10 @@ async function loadUsers() {
     try {
         document.getElementById('usersLoading').style.display = 'block';
 
-        // Simulate user data
-        const users = [
-            {
-                id: 1,
-                username: 'john_doe',
-                email: 'john@example.com',
-                first_name: 'John',
-                last_name: 'Doe',
-                user_type: 'client',
-                created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
-                is_active: true
-            },
-            {
-                id: 2,
-                username: 'jane_smith',
-                email: 'jane@example.com',
-                first_name: 'Jane',
-                last_name: 'Smith',
-                user_type: 'client',
-                created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
-                is_active: true
-            }
-        ];
+        const data = await apiRequest('/api/admin/users');
 
-        displayUsers(users);
-        adminData.users = users;
+        displayUsers(data.users);
+        adminData.users = data.users;
     } catch (error) {
         console.error('Error loading users:', error);
         document.getElementById('usersList').innerHTML =
@@ -427,6 +443,66 @@ function displayUsers(users) {
                             <i class="fas fa-eye"></i>
                         </button>
                     </td>
+                </tr>
+            `).join('')}
+        </tbody>
+    `;
+
+    container.appendChild(table);
+}
+
+// Load investments
+async function loadInvestments() {
+    if (adminData.investments && adminData.investments.length > 0) return; // Already loaded
+
+    try {
+        document.getElementById('investmentsLoading').style.display = 'block';
+
+        const data = await apiRequest('/api/admin/investments');
+
+        displayInvestments(data.investments);
+        adminData.investments = data.investments;
+    } catch (error) {
+        console.error('Error loading investments:', error);
+        document.getElementById('investmentsList').innerHTML =
+            '<div class="alert alert-danger">Failed to load investments</div>';
+    } finally {
+        document.getElementById('investmentsLoading').style.display = 'none';
+    }
+}
+
+// Display investments
+function displayInvestments(investments) {
+    const container = document.getElementById('investmentsList');
+
+    if (!investments || investments.length === 0) {
+        container.innerHTML = '<div class="alert alert-info">No investment quotes found</div>';
+        return;
+    }
+
+    const table = document.createElement('table');
+    table.className = 'table table-striped table-hover';
+
+    table.innerHTML = `
+        <thead class="table-dark">
+            <tr>
+                <th>User</th>
+                <th>Plan Type</th>
+                <th>Initial Sum</th>
+                <th>Monthly</th>
+                <th>10Y Max Value</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            ${investments.map(investment => `
+                <tr>
+                    <td>${investment.username || 'Unknown'}</td>
+                    <td><span class="badge bg-primary">${investment.investment_type.charAt(0).toUpperCase() + investment.investment_type.slice(1)}</span></td>
+                    <td>£${formatNumber(investment.initial_lump_sum)}</td>
+                    <td>£${formatNumber(investment.monthly_investment)}</td>
+                    <td>£${formatNumber(investment.year_10_max)}</td>
+                    <td>${new Date(investment.created_at).toLocaleDateString()}</td>
                 </tr>
             `).join('')}
         </tbody>
